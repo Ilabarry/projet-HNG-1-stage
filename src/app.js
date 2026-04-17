@@ -1,32 +1,45 @@
 const express = require('express');
 const cors = require('cors');
 const { classifyName } = require('./controllers/classifyController');
+const profileController = require('./controllers/profileController');
 
 const app = express();
 
-// Middleware CORS - indispensable pour que le script de notation puisse accéder à ton API
+// Middleware CORS - indispensable pour le script de notation
 app.use(cors({
-  origin: '*', // Permet à toutes les origines d'accéder
-  methods: ['GET'],
+  origin: '*',
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type']
 }));
 
-// Middleware pour parser le JSON (au cas où)
+// Middleware pour parser le JSON
 app.use(express.json());
 
-// Route de base (optionnelle, pour vérifier que le serveur tourne)
+// Route de base (vérification que le serveur tourne)
 app.get('/', (req, res) => {
   res.status(200).json({
     status: 'success',
     message: 'HNG Backend API is running',
     endpoints: {
-      classify: '/api/classify?name={name}'
+      stage0: '/api/classify?name={name}',
+      stage1: {
+        create: 'POST /api/profiles',
+        getOne: 'GET /api/profiles/{id}',
+        getAll: 'GET /api/profiles?gender=&country_id=&age_group=',
+        delete: 'DELETE /api/profiles/{id}'
+      }
     }
   });
 });
 
-// Endpoint principal demandé
+// Stage 0 - Endpoint existant
 app.get('/api/classify', classifyName);
+
+// Stage 1 - Nouveaux endpoints
+app.post('/api/profiles', profileController.createProfile);
+app.get('/api/profiles', profileController.getAllProfiles);
+app.get('/api/profiles/:id', profileController.getProfileById);
+app.delete('/api/profiles/:id', profileController.deleteProfile);
 
 // Gestion des routes non trouvées (404)
 app.use((req, res) => {
@@ -36,7 +49,7 @@ app.use((req, res) => {
   });
 });
 
-// Gestion globale des erreurs (fallback)
+// Gestion globale des erreurs
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({
